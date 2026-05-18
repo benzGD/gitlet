@@ -1,5 +1,7 @@
 package gitlet;
 
+import java.io.File;
+
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author TODO
  */
@@ -20,8 +22,36 @@ public class Main {
                 Repository.setupRepository();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
+                //check if gitlet exists or not...
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an intialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args[1] == null) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                String filename = args[1];
+                File f = new File(Repository.CWD, filename);
+                if (!f.isFile()) {
+                    System.out.println("File does not exist.");
+                    System.exit(0);
+                }
+                Repository.add(filename, f);
                 break;
+            case "commit":
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an intialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args[1] == null) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
+
+                String message = args[1];
+                Repository.commit(message);
+
             // TODO: FILL THE REST IN
         }
     }
