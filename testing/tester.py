@@ -59,7 +59,7 @@ The instructions each have one of the following forms:
           Run gitlet.Main with COMMAND ARGUMENTS as its parameters.  Compare
           its output with LINE1, LINE2, etc., reporting an error if there is
           "sufficient" discrepency.  The <<< delimiter may be followed by
-          an asterisk (*), in which case, the preceding lines are treated as 
+          an asterisk (*), in which case, the preceding lines are treated as
           Python regular expressions and matched accordingly. The directory
           or JAR file containing the gitlet.Main program is assumed to be
           in directory DIR specifed by --progdir (default is ..).
@@ -439,18 +439,7 @@ if __name__ == "__main__":
         print(USAGE)
         sys.exit(0)
 
-    ON_WINDOWS = Match(r'.*\\', join('a', 'b'))
-    if ON_WINDOWS:
-        if 'CLASSPATH' in environ:
-            environ['CLASSPATH'] = "{};{}".format(prog_dir, environ['CLASSPATH'])
-        else:
-            environ['CLASSPATH'] = "{}".format(prog_dir)
-    else:
-        if 'CLASSPATH' in environ:
-            environ['CLASSPATH'] = "{}:{}".format(prog_dir, environ['CLASSPATH'])
-        else:
-            environ['CLASSPATH'] = "{}".format(prog_dir)
-        JAVA_COMMAND = 'exec ' + JAVA_COMMAND
+    environ['CLASSPATH'] = prog_dir
 
     num_tests = len(files)
     errs = 0

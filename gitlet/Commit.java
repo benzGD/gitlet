@@ -5,7 +5,9 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -79,6 +81,11 @@ public class Commit implements Serializable {
         return readObject(in, Commit.class);
     }
 
+    public static Commit fromFile(String commit_id) {
+        File in = new File(Repository.COMMITS_DIR, commit_id);
+        return readObject(in, Commit.class);
+    }
+
 
 
     /* Saves the commit to the COMMITT_dir*/
@@ -100,6 +107,26 @@ public class Commit implements Serializable {
 
 
     }
+
+    public String getMessage(){
+        return  this.message;
+    }
+
+    // --- FIXED DATE PART ---
+    public String getTimestamp(){
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
+        return formatter.format(this.timestamp);
+    }
+
+    public String getParent1(){
+        return  this.parent1;
+    }
+
+    public String getParent2(){
+        return  this.parent2;
+    }
+
+
 
 
 

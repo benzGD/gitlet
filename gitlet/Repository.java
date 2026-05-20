@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Formatter;
 import java.util.Map;
 
 import static gitlet.Utils.*;
@@ -77,23 +78,6 @@ public class Repository {
           Commit head = new Commit("initial commit", null, null);
         //save it in the commits directory
 
-
-//          String id_of_first_commit = sha1((Object) serialize(head));
-//
-//          File f = new File(COMMITS_DIR, HEAD);
-//          if (!f.exists()) {
-//              try {
-//                  f.createNewFile();
-//              } catch (IOException e) {
-//                  throw new RuntimeException(e);
-//              }
-//
-//          }
-//          //may not be correct!!!!!!!!!!!!! FIX THIS
-//          writeObject(f, head);
-
-//          writeContents(HEAD, id_of_first_commit);
-
           head.saveCommmit();
 
 
@@ -141,7 +125,6 @@ public class Repository {
         // bool isIdentical() .///// uses sha1 ....
 
             if (!isIdentical(f, newfile)) {
-
                 writeContents(newfile, (Object) readContents(f));
 
             }
@@ -210,18 +193,6 @@ public class Repository {
         }
 
         new_commit.saveCommmit();
-          //make  a commit object ....
-        //copy the blobmap of the latest head commit to the
-        //to the current commit and make the current commit as head
-
-        //  If the current working version of the file is identical
-        //  to the version in the current commit, do not stage it to be added,
-        //  and remove it from the staging area if it is already there
-
-
-        //save the commit object in the commits folder under its sha1 name..
-
-        // remove all the files from the staging area
         for (String filename : filenames ) {
             File f = join(INDEX_DIR, filename);
             f.delete();
@@ -230,4 +201,125 @@ public class Repository {
 
     }
 
-}
+    public static void checkout(String filename) {
+        File f = join(CWD, filename);
+
+        //unrap the head commit
+        Commit curr = Commit.fromFile(HEAD);
+        //check if head commit's blob contains filename
+        if (!curr.blobmap.containsKey(filename)) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            File blob = join(OBJ_DIR, curr.blobmap.get(filename));
+
+            writeContents(f, (Object) readContents(blob));
+
+
+        } else {
+
+            File blob = join(OBJ_DIR, curr.blobmap.get(filename));
+            writeContents(f, (Object) readContents(blob));
+
+
+
+        }
+
+
+    }
+
+
+    public static void checkout(String commit_id, String filename) {
+        File f = join(CWD, filename);
+
+        File commit = join(COMMITS_DIR, commit_id);
+        if (!commit.exists()) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+
+        }
+        //unrap the given commit id
+        Commit c = Commit.fromFile(commit_id);
+        //check if head commit's blob contains filename
+        if (!c.blobmap.containsKey(filename)) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+            File blob = join(OBJ_DIR, c.blobmap.get(filename));
+            writeContents(f, (Object) readContents(blob));
+
+
+        }
+
+    public static void log() {
+        String commit_id = readContentsAsString(HEAD); //update- this  id
+        Commit c = Commit.fromFile(HEAD);
+        while (c.blobmap != null){
+            Formatter f = new Formatter();
+            f.format("===%n");
+            f.format("commit %s%n", commit_id);
+            f.format("Date: %s%n", c.getTimestamp());
+            f.format("%s%n", c.getMessage());
+            System.out.println(f);
+            f.close();
+
+
+            //follow the parent1
+            commit_id = c.getParent1();
+            c = Commit.fromFile(commit_id);
+
+        }
+
+        //this has to be the head
+        if (c.blobmap == null) {
+            Formatter f = new Formatter();
+            f.format("===%n");
+            f.format("commit %s%n", commit_id);
+            f.format("Date: %s%n", c.getTimestamp());
+            f.format("%s%n", c.getMessage());
+            System.out.println(f);
+            System.out.println();
+            f.close();
+
+        }
+
+    }
+
+    public static void rm(String filename) {
+        //check if the file is currently being tracked by the HEAD commit or not...
+        Commit head = Commit.fromFile(HEAD);
+        if (!head.blobmap.containsKey(filename)) {
+            //means its not currently being tracked by the HEAD commit..
+
+            //now check if its in the staging area or not
+
+
+
+        } else {
+
+        }
+
+    }
+
+
+
+
+    }
+
+
+

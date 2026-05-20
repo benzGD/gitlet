@@ -17,6 +17,8 @@ public class Main {
         }
 
         String firstArg = args[0];
+        String filename;
+        File f;
         switch(firstArg) {
             case "init":
                 Repository.setupRepository();
@@ -31,12 +33,8 @@ public class Main {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
                 }
-                String filename = args[1];
-                File f = new File(Repository.CWD, filename);
-                if (!f.isFile()) {
-                    System.out.println("File does not exist.");
-                    System.exit(0);
-                }
+                filename = args[1];
+                f = validateFile(filename);
                 Repository.add(filename, f);
                 break;
             case "commit":
@@ -51,8 +49,71 @@ public class Main {
 
                 String message = args[1];
                 Repository.commit(message);
+                break;
+            case "checkout":
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an intialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length == 3) {
+                    filename = args[2];
+                    Repository.checkout(filename);
 
-            // TODO: FILL THE REST IN
+                } else if (args.length == 4) {
+                    filename = args[3];
+                    Repository.checkout(args[1], filename);
+
+                } else  {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+
+                }
+                break;
+            case "log":
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an intialized Gitlet directory.");
+                    System.exit(0);
+                }
+                Repository.log();
+                break;
+            case "rm":
+                initialSecurity(args[1]);
+                filename = args[1];
+                Repository.rm(filename);
+                break;
+
+
+
+            default:
+                System.out.println("No command with that name exists.");
+                System.exit(0);
+
+                // TODO: FILL THE REST IN
         }
     }
+
+    public static File validateFile(String name) {
+        File f = new File(Repository.CWD, name);
+        if (!f.isFile()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+        return f;
+    }
+
+    public static void initialSecurity(String s) {
+        if (!Repository.GITLET_DIR.exists()) {
+            System.out.println("Not in an intialized Gitlet directory.");
+            System.exit(0);
+        }
+        if (s == null) {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+        }
+
+    }
+
+
+
+
 }
