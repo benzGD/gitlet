@@ -1,0 +1,41 @@
+# Test the reset command
+I definitions.inc
+> init
+<<<
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "version 1 of wug"
+<<<
++ wug.txt notwug.txt
+> add wug.txt
+<<<
+> commit "version 2 of wug"
+<<<
+# Log to capture the commit IDs
+> log
+===
+${COMMIT_HEAD}
+version 2 of wug
+
+===
+${COMMIT_HEAD}
+version 1 of wug
+
+===
+${COMMIT_HEAD}
+initial commit
+
+<<<*
+# UID2 is "version 2", UID1 is "version 1"
+D UID2 "${1}"
+D UID1 "${2}"
+
+# Currently at version 2, so the file should be notwug
+= wug.txt notwug.txt
+
+# Reset back to version 1
+> reset ${UID1}
+<<<
+# The file should now be reverted to the original wug
+= wug.txt wug.txt

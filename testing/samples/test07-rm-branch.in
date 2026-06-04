@@ -1,0 +1,12 @@
+# Test removing a branch
+I definitions.inc
+> init
+<<<
+> branch doomed-branch
+<<<
+> rm-branch doomed-branch
+<<<
+# Attempting to checkout a deleted branch should fail
+> checkout doomed-branch
+No such branch exists.
+<<<

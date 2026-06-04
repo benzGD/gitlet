@@ -32,6 +32,15 @@ public class Repository {
     /* The staging area directory. */
     public static final File INDEX_DIR = join(GITLET_DIR, "index");
 
+    /*Staging for addition. */
+    public static final File ADDITION_DIR = join(INDEX_DIR, "addition");
+
+
+    /*Staged for removal directory.
+    * Contains the names of the files to be staged for removal or deletion from
+    * the CWD in the next commit */
+    public static final File REMOVAL_DIR = join(INDEX_DIR, "removal");
+
     /* The commits directory. */
     public static final File COMMITS_DIR = join(GITLET_DIR, "commits");
 
@@ -41,11 +50,12 @@ public class Repository {
     /*File pointing to the initial commit. */
     public static final File HEAD = join(COMMITS_DIR, "HEAD");
 
-
+    /** File pointing to the objects/refs folder...*/
+    public static File REFS = join(OBJ_DIR, "refs");
 
     /** Variable to store the master branch.
      * branch is just a pointer to a commit, nothing else...*/
-    public static Commit master;
+    public static File master = join(REFS, "master");
 
 
     /** Variable to store the HEAD pointer. */
@@ -67,17 +77,21 @@ public class Repository {
         }
         GITLET_DIR.mkdir();
         INDEX_DIR.mkdir();
+        ADDITION_DIR.mkdir();
+        REMOVAL_DIR.mkdir();
         COMMITS_DIR.mkdir();
         OBJ_DIR.mkdir();
+        REFS.mkdir();
           try {
               HEAD.createNewFile();
+              master.createNewFile();
           } catch (IOException e) {
               throw new RuntimeException(e);
           }
 
-          Commit head = new Commit("initial commit", null, null);
-        //save it in the commits directory
+          writeContents(HEAD, "master");  //HEAD initially points to the master branch
 
+          Commit head = new Commit("initial commit", null, null);
           head.saveCommmit();
 
 
@@ -96,9 +110,9 @@ public class Repository {
    * in the current commit, do not stage it to be added, and remove it from
    * the staging area if it is already there */
     public static void add(String name, File f) {
-        File newfile = join(INDEX_DIR, name);
+        File newfile = join(ADDITION_DIR, name);
 //        System.out.println(HEAD);
-        Commit curr = Commit.fromFile(HEAD);
+        Commit curr = Commit.fromFile(HEAD); //fix this
 
         if (!newfile.exists()) {
             //first time adding or ....
@@ -152,23 +166,23 @@ public class Repository {
 
     public static void commit(String message){
         //if the index folder is empty.... abort ...
-        if (isEmptyDir(INDEX_DIR)) {
+        if (isEmptyDir(ADDITION_DIR)) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
 
         }
 
         //take out all the files names from the staging area...
-        String[] filenames = INDEX_DIR.list();
+        String[] filenames = ADDITION_DIR.list();
 
         Commit prev = Commit.fromFile(HEAD);
 //        String id = readContentsAsString(HEAD);
 
-        Commit new_commit = new Commit(message, readContentsAsString(HEAD), prev);
+        Commit new_commit = new Commit(message,  readContentsAsString(join(REFS, readContentsAsString(HEAD) )), prev);
 
         assert filenames != null;
         for (String filename : filenames) {
-                File f = join(INDEX_DIR, filename);
+                File f = join(ADDITION_DIR, filename);
                 byte[] contents = readContents(f);
                 String id = sha1((Object) contents);
                 new_commit.blobmap.put(filename, id);
@@ -192,9 +206,24 @@ public class Repository {
 
         }
 
+        //Now stage for removal...
+        //take out all the files names from the removal area...
+        String[] files_to_be_removed = REMOVAL_DIR.list();
+        for (String file : files_to_be_removed) {
+            if (!new_commit.blobmap.containsKey(file)) {
+                System.out.println("should have been in the previous commit....");
+                System.exit(0);
+
+            } else {
+                new_commit.blobmap.remove(file);
+
+            }
+        }
+
+
         new_commit.saveCommmit();
         for (String filename : filenames ) {
-            File f = join(INDEX_DIR, filename);
+            File f = join(ADDITION_DIR, filename);
             f.delete();
 
         }
@@ -266,8 +295,113 @@ public class Repository {
 
         }
 
+
+
+//    //Checks if the file is currently being tracked by the given branch or not...
+//    private static boolean istracked(String filename, File branch) {
+//        Commit head = Commit.fromFile(branch);
+//        return head.blobmap.containsKey(filename);
+//    }
+
+    private static void staging_area_clearer(File file) {
+        String[] filenames = file.list();
+        for (String filename : filenames ) {
+            File f = join(file, filename);
+            f.delete();
+
+        }
+
+    }
+
+    //Here id could be a branch or a commit id...
+    private static void checkout_internals(String id) {
+        //get the current commit
+        Commit curr = Commit.fromFile(HEAD);
+        Commit c;  //variable to store commit
+
+
+        //check if its a branch or a commit id...
+        if (join(REFS, id).exists()) {
+             c = Commit.fromFile_B(join(REFS, id));
+
+        } else {
+             c = Commit.fromFile(id);
+
+        }
+        //get the commit at the head of the given branch
+
+        //simple case : just take out all the files from the blob
+        //and put them in the working directory, overwriting the
+        // versions of the files that are already there if they exist.
+        for (String filename : c.blobmap.keySet() ) {
+
+            File f = join(CWD, filename);
+            //working file is untracked in the current branch
+            if (f.exists() && !curr.blobmap.containsKey(filename)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+
+            }
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            File blob = join(OBJ_DIR, c.blobmap.get(filename));
+            writeContents(f, (Object) readContents(blob));
+
+
+        }
+
+
+        //Any files that are tracked in the current branch but are not present
+        // in the checked-out branch are deleted.
+        for (String filename : curr.blobmap.keySet() ) {
+            File f = join(CWD, filename);
+
+            if (f.exists() &&  !c.blobmap.containsKey(filename)) {
+                restrictedDelete(f);
+
+            }
+
+        }
+
+        //clear the staging area...
+        staging_area_clearer(ADDITION_DIR);
+        staging_area_clearer(REMOVAL_DIR);
+
+
+
+    }
+
+    public static void checkout_b(String branch) {
+        if (!join(REFS, branch).exists()) {
+            System.out.println("No such branch exists.");
+            System.exit(0);
+
+        } else if (readContentsAsString(HEAD).equals(branch)) {
+            System.out.println("No need to checkout the current branch.");
+            System.exit(0);
+
+        }
+
+        checkout_internals(branch);
+
+        //finally the given branch will now be considered the current branch (HEAD).
+        writeContents(HEAD, branch);
+
+
+
+    }
+
+
+
+
+
     public static void log() {
-        String commit_id = readContentsAsString(HEAD); //update- this  id
+        String commit_id = readContentsAsString(join(REFS, readContentsAsString(HEAD) )); //update- this  id
         Commit c = Commit.fromFile(HEAD);
         while (c.blobmap != null){
             Formatter f = new Formatter();
@@ -301,20 +435,107 @@ public class Repository {
     }
 
     public static void rm(String filename) {
-        //check if the file is currently being tracked by the HEAD commit or not...
+        //check if the file is currently being tracked by the current commit or not...
         Commit head = Commit.fromFile(HEAD);
         if (!head.blobmap.containsKey(filename)) {
-            //means its not currently being tracked by the HEAD commit..
+            //means its not currently being tracked by the current commit.
 
             //now check if its in the staging area or not
+            File f = join(ADDITION_DIR, filename);
+            if (f.exists() && f.isFile()) {
+                //unstage the file
+                f.delete();
 
+            } else {
+                System.out.println("No reason to remove the file.");
+                System.exit(0);
+
+            }
 
 
         } else {
 
+            File f = join(ADDITION_DIR, filename);
+            if (f.exists() && f.isFile()) {
+                //unstage the file
+                f.delete();
+            }
+
+            //stage it for removal
+             f = join(REMOVAL_DIR, filename);
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            //also delete the file from the CWD if it exists...
+            if (join(CWD, filename).exists()) {
+                restrictedDelete(join(CWD, filename));
+            }
+
         }
 
     }
+
+
+    public static void branch(String name) {
+//        if (!readContentsAsString(HEAD).equals("master")) {
+//            System.out.println("should be running with a default branch called “master”.");
+//            System.exit(0);
+//        }
+        File new_branch = join(REFS, name);
+
+        if (new_branch.exists()) {
+            System.out.println("A branch with that name already exists.");
+            System.exit(0);
+
+        }
+
+        try {
+            new_branch.createNewFile();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        writeContents(new_branch, (Object) readContents(join(REFS, "master")));
+
+
+    }
+
+    public static void rmbranch(String name) {
+
+        File f = join(REFS, name);
+        if (!f.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+
+        } else if (readContentsAsString(HEAD).equals(name)) {
+            System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+
+        f.delete();
+
+    }
+
+    public static void reset(String id) {
+        if (!join(COMMITS_DIR, id).exists()) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+
+        }
+        checkout_internals(id);
+
+        // Also moves the current branch’s head to that commit node.
+        writeContents(join(REFS, readContentsAsString(HEAD )), id);
+
+    }
+
+
+
+
+
+
 
 
 

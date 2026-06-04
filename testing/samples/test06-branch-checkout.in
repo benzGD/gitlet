@@ -1,0 +1,26 @@
+# Test creating a branch and checking it out
+I definitions.inc
+> init
+<<<
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "added original wug on master"
+<<<
+> branch cool-branch
+<<<
+> checkout cool-branch
+<<<
++ wug.txt notwug.txt
+> add wug.txt
+<<<
+> commit "changed wug to notwug on cool-branch"
+<<<
+# Switch back to master; the file should revert to the original wug
+> checkout master
+<<<
+= wug.txt wug.txt
+# Switch back to cool-branch; the file should be notwug again
+> checkout cool-branch
+<<<
+= wug.txt notwug.txt

@@ -1,0 +1,15 @@
+# Test the rm command functionality
+I definitions.inc
+> init
+<<<
++ wug.txt wug.txt
+> add wug.txt
+<<<
+> commit "added wug"
+<<<
+# File should exist right now
+E wug.txt
+> rm wug.txt
+<<<
+# File should no longer exist in the working directory
+* wug.txt

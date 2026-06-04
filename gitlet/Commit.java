@@ -50,7 +50,7 @@ public class Commit implements Serializable {
 
 
     /* TODO: fill in the rest of this class. */
-
+    //might need to refactor this later to account for parent2??????
     public Commit(String message, String parent, Commit other) {
 
 
@@ -76,10 +76,19 @@ public class Commit implements Serializable {
     }
 
     public static Commit fromFile(File file) {
-        String name = readContentsAsString(file);
-        File in = new File(Repository.COMMITS_DIR, name);
+        String branch_name = readContentsAsString(file);
+        String id = readContentsAsString(join(Repository.REFS, branch_name));
+        File in = new File(Repository.COMMITS_DIR, id);
         return readObject(in, Commit.class);
     }
+
+    public static Commit fromFile_B(File file) {
+        String id = readContentsAsString(file);
+        File in = new File(Repository.COMMITS_DIR, id);
+        return readObject(in, Commit.class);
+    }
+
+
 
     public static Commit fromFile(String commit_id) {
         File in = new File(Repository.COMMITS_DIR, commit_id);
@@ -92,7 +101,20 @@ public class Commit implements Serializable {
     /*in what name to save it????????/*/
     public void saveCommmit()  {
         String id = sha1((Object) serialize(this));
-        writeContents(Repository.HEAD, id);
+        String name0fBranch = readContentsAsString(Repository.HEAD);
+        //HEAD SHOULD NOT BE IN A DETACHED HEAD STATE!!!!! (CHECK THIS)!
+        //whatver branch HEAD is pointing to, open that up and make changes to that branch...
+
+        File branch = join(Repository.REFS, name0fBranch);
+        if (!branch.exists()) {
+            System.out.println("HEAD is in a DETACHED-HEAD STATE!!!!");
+            System.exit(0);
+
+        }
+        writeContents(branch, id);
+
+
+        //save it in the commits directory
         File f = new File(Repository.COMMITS_DIR, id);
         if (!f.exists()) {
             try {

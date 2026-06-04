@@ -18,6 +18,7 @@ public class Main {
 
         String firstArg = args[0];
         String filename;
+        String name;
         File f;
         switch(firstArg) {
             case "init":
@@ -55,7 +56,11 @@ public class Main {
                     System.out.println("Not in an intialized Gitlet directory.");
                     System.exit(0);
                 }
-                if (args.length == 3) {
+                if (args.length == 2) {
+                    filename = args[1];
+                    Repository.checkout_b(filename);
+
+                } else if (args.length == 3) {
                     filename = args[2];
                     Repository.checkout(filename);
 
@@ -81,6 +86,22 @@ public class Main {
                 filename = args[1];
                 Repository.rm(filename);
                 break;
+            case "branch":
+               name = args[1];
+               initialSecurity(name);
+               Repository.branch(name);
+                break;
+            case "rm-branch":
+                name = args[1];
+                initialSecurity(name);
+                Repository.rmbranch(name);
+                break;
+            case "reset":
+                name = args[1];
+                initialSecurity(name);
+                Repository.reset(name);
+                break;
+
 
 
 
