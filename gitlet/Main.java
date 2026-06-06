@@ -2,13 +2,16 @@ package gitlet;
 
 import java.io.File;
 
-/** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+/**
+ * Driver class for Gitlet, a subset of the Git version-control system.
+ *
+ * @author TODO
  */
 public class Main {
 
-    /** Usage: java gitlet.Main ARGS, where ARGS contains
-     *  <COMMAND> <OPERAND1> <OPERAND2> ...
+    /**
+     * Usage: java gitlet.Main ARGS, where ARGS contains
+     * <COMMAND> <OPERAND1> <OPERAND2> ...
      */
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -20,7 +23,7 @@ public class Main {
         String filename;
         String name;
         File f;
-        switch(firstArg) {
+        switch (firstArg) {
             case "init":
                 Repository.setupRepository();
                 break;
@@ -44,11 +47,15 @@ public class Main {
                     System.exit(0);
                 }
                 if (args[1] == null) {
-                    System.out.println("Please enter a commit message.");
+                    System.out.println("Incorrect operands.");
                     System.exit(0);
                 }
 
                 String message = args[1];
+                if (message.isEmpty()) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
                 Repository.commit(message);
                 break;
             case "checkout":
@@ -58,17 +65,27 @@ public class Main {
                 }
                 if (args.length == 2) {
                     filename = args[1];
-                    Repository.checkout_b(filename);
+                    Repository.checkoutB(filename);
 
                 } else if (args.length == 3) {
+                    if (!args[1].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+
+                    }
                     filename = args[2];
                     Repository.checkout(filename);
 
                 } else if (args.length == 4) {
+                    if (!args[2].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+
+                    }
                     filename = args[3];
                     Repository.checkout(args[1], filename);
 
-                } else  {
+                } else {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
 
@@ -81,15 +98,27 @@ public class Main {
                 }
                 Repository.log();
                 break;
+            case "global-log":
+                if (!Repository.GITLET_DIR.exists()) {
+                    System.out.println("Not in an intialized Gitlet directory.");
+                    System.exit(0);
+                }
+                Repository.globalLog();
+                break;
+            case "find":
+                name = args[1];
+                initialSecurity(name);
+                Repository.find(name);
+                break;
             case "rm":
                 initialSecurity(args[1]);
                 filename = args[1];
                 Repository.rm(filename);
                 break;
             case "branch":
-               name = args[1];
-               initialSecurity(name);
-               Repository.branch(name);
+                name = args[1];
+                initialSecurity(name);
+                Repository.branch(name);
                 break;
             case "rm-branch":
                 name = args[1];
@@ -101,8 +130,11 @@ public class Main {
                 initialSecurity(name);
                 Repository.reset(name);
                 break;
-
-
+            case "status":
+                name = args[0];
+                initialSecurity(name);
+                Repository.status();
+                break;
 
 
             default:
@@ -133,8 +165,6 @@ public class Main {
         }
 
     }
-
-
 
 
 }

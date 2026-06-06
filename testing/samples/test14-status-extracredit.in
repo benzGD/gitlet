@@ -1,0 +1,75 @@
+# Test ALL status conditions, including branches, removals, and untracked edge cases
+I definitions.inc
+> init
+<<<
+# 1. SETUP BRANCHES (To test lexicographic ordering and the * marker)
+> branch other-branch
+<<<
+
+# 2. SETUP TRACKED FILES
++ a.txt wug.txt
++ c.txt wug.txt
++ f.txt wug.txt
+> add a.txt
+<<<
+> add c.txt
+<<<
+> add f.txt
+<<<
+> commit "setup tracked files"
+<<<
+
+# 3. MODIFICATIONS NOT STAGED FOR COMMIT (Tracked files)
+# Condition 1: Tracked, changed, not staged
++ a.txt notwug.txt
+# Condition 4: Tracked, deleted, not staged for removal (using OS delete '-')
+- c.txt
+
+# 4. MODIFICATIONS NOT STAGED FOR COMMIT (Staged files)
++ b.txt wug.txt
++ e.txt wug.txt
+> add b.txt
+<<<
+> add e.txt
+<<<
+# Condition 2: Staged, changed
++ b.txt notwug.txt
+# Condition 3: Staged, deleted
+- e.txt
+
+# 5. REMOVED FILES & UNTRACKED EDGE CASE
+# Stage f.txt for removal
+> rm f.txt
+<<<
+# Sneaky Edge Case: Staged for removal, but re-created without Gitlet knowing
++ f.txt wug.txt
+
+# 6. STANDARD UNTRACKED FILE
++ d.txt wug.txt
+
+
+# 7. THE FINAL ASSERTION
+# This checks exact formatting, lexicographic ordering, and every single spec rule.
+> status
+=== Branches ===
+*master
+other-branch
+
+=== Staged Files ===
+b.txt
+e.txt
+
+=== Removed Files ===
+f.txt
+
+=== Modifications Not Staged For Commit ===
+a.txt (modified)
+b.txt (modified)
+c.txt (deleted)
+e.txt (deleted)
+
+=== Untracked Files ===
+d.txt
+f.txt
+
+<<<
