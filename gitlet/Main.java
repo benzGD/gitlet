@@ -56,7 +56,7 @@ public class Main {
                     System.out.println("Please enter a commit message.");
                     System.exit(0);
                 }
-                Repository.commit(message);
+                Repository.commit(message, false, null);
                 break;
             case "checkout":
                 if (!Repository.GITLET_DIR.exists()) {
@@ -135,13 +135,18 @@ public class Main {
                 initialSecurity(name);
                 Repository.status();
                 break;
+            case "merge":
+                name = args[1];
+                initialSecurity(name);
+                Repository.merge(name);
+                break;
+
 
 
             default:
                 System.out.println("No command with that name exists.");
                 System.exit(0);
 
-                // TODO: FILL THE REST IN
         }
     }
 

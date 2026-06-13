@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static gitlet.Branch.*;
+import static gitlet.Commit.*;
 import static gitlet.Utils.*;
 
 
@@ -77,8 +79,8 @@ public class Repository {
 
     public static void setupRepository() {
         if (GITLET_DIR.exists()) {
-            System.out.println("A Gitlet version-control system already exists in the" +
-                    " current directory.");
+            System.out.println("A Gitlet version-control system already exists in the"
+                    + " current directory.");
             System.exit(0);
 
         }
@@ -111,8 +113,7 @@ public class Repository {
     }
 
 
-    /* this function is incomplete ....
-     * still have to implement
+    /*
      * If the current working version of the file is identical to the version
      * in the current commit, do not stage it to be added, and remove it from
      * the staging area if it is already there */
@@ -178,7 +179,9 @@ public class Repository {
         }
     }
 
-    public static void commit(String message) {
+
+    //Third parameter 'branchName' will be used in Merge Commits..
+    public static void commit(String message, boolean b, String branchName) {
         //if the index folder is empty.... abort ...
         if (isEmptyDir(ADDITION_DIR) && isEmptyDir(REMOVAL_DIR)) {
             System.out.println("No changes added to the commit.");
@@ -190,9 +193,19 @@ public class Repository {
         String[] filenames = ADDITION_DIR.list();
 
         Commit prev = Commit.fromFile(HEAD);
-//        String id = readContentsAsString(HEAD);
 
-        Commit newCommit = new Commit(message, readContentsAsString(join(REFS, readContentsAsString(HEAD))), prev);
+        Commit newCommit;
+
+
+        if (b) {
+            newCommit = new Commit(message, getCurrentBranchCommitId(), getBranchCommitId(branchName), prev);
+
+
+        } else {
+
+            newCommit = new Commit(message, getCurrentBranchCommitId(), prev);
+        }
+
 
         assert filenames != null;
         for (String filename : filenames) {
@@ -350,15 +363,11 @@ public class Repository {
                 File f = join(CWD, filename);
                 //working file is untracked in the current branch (also check
                 //if current branch is the initial commit
-                if (curr.blobmap == null) {
-                    System.out.println("There is an untracked file in the way; delete it, or " +
-                            "add and commit it first.");
+                if (curr.blobmap == null || (f.exists() && !curr.blobmap.containsKey(filename))) {
+                    System.out.println("There is an untracked file in the way; delete it, or "
+                            + "add and commit it first.");
                     System.exit(0);
 
-                } else if (f.exists() && !curr.blobmap.containsKey(filename)) {
-                    System.out.println("There is an untracked file in the way; delete it, or " +
-                            "add and commit it first.");
-                    System.exit(0);
                 }
                 if (!f.exists()) {
                     try {
@@ -409,7 +418,7 @@ public class Repository {
             System.out.println("No such branch exists.");
             System.exit(0);
 
-        } else if (readContentsAsString(HEAD).equals(branch)) {
+        } else if (currentBranchName().equals(branch)) {
             System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
@@ -424,21 +433,44 @@ public class Repository {
 
 
     public static void log() {
-        String commitId = readContentsAsString(join(REFS, readContentsAsString(HEAD)));
+        String commitId = getCurrentBranchCommitId();
         Commit c = Commit.fromFile(HEAD);
         while (c.blobmap != null) {
-            Formatter f = new Formatter();
-            f.format("===%n");
-            f.format("commit %s%n", commitId);
-            f.format("Date: %s%n", c.getTimestamp());
-            f.format("%s%n", c.getMessage());
-            System.out.println(f);
-            f.close();
+
+            if (c.getParent1() != null && c.getParent2() != null) {
+                String parent1 = c.getParent1();
+                String parent2 = c.getParent2();
+
+                Formatter f = new Formatter();
+                f.format("===%n");
+                f.format("commit %s%n", commitId);
+                f.format("Merge: %s %s%n", parent1.substring(0, 7), parent2.substring(0, 7));
+                f.format("Date: %s%n", c.getTimestamp());
+                f.format("%s%n", c.getMessage());
+                System.out.println(f);
+                f.close();
 
 
-            //follow the parent1
-            commitId = c.getParent1();
-            c = Commit.fromFile(commitId);
+                //follow the parent1
+                commitId = c.getParent1();
+                c = Commit.fromFile(commitId);
+
+
+            } else {
+                Formatter f = new Formatter();
+                f.format("===%n");
+                f.format("commit %s%n", commitId);
+                f.format("Date: %s%n", c.getTimestamp());
+                f.format("%s%n", c.getMessage());
+                System.out.println(f);
+                f.close();
+
+
+                //follow the parent1
+                commitId = c.getParent1();
+                c = Commit.fromFile(commitId);
+
+            }
 
         }
 
@@ -463,13 +495,29 @@ public class Repository {
         for (String id : commitIds) {
             Commit c = Commit.fromFile(id);
 
-            Formatter f = new Formatter();
-            f.format("===%n");
-            f.format("commit %s%n", id);
-            f.format("Date: %s%n", c.getTimestamp());
-            f.format("%s%n", c.getMessage());
-            System.out.println(f);
-            f.close();
+            if (c.getParent1() != null && c.getParent2() != null) {
+                String parent1 = c.getParent1();
+                String parent2 = c.getParent2();
+
+                Formatter f = new Formatter();
+                f.format("===%n");
+                f.format("commit %s%n", id);
+                f.format("Merge: %s %s%n", parent1.substring(0, 7), parent2.substring(0, 7));
+                f.format("Date: %s%n", c.getTimestamp());
+                f.format("%s%n", c.getMessage());
+                System.out.println(f);
+                f.close();
+
+            } else {
+                Formatter f = new Formatter();
+                f.format("===%n");
+                f.format("commit %s%n", id);
+                f.format("Date: %s%n", c.getTimestamp());
+                f.format("%s%n", c.getMessage());
+                System.out.println(f);
+                f.close();
+
+            }
 
 
         }
@@ -502,7 +550,7 @@ public class Repository {
 
 
     private static void printBranches() {
-        String curr_branch = readContentsAsString(HEAD);
+        String curr_branch = currentBranchName();
         Formatter f = new Formatter();
         f.format("=== Branches ===%n");
         List<String> filenames = plainFilenamesIn(REFS);
@@ -724,7 +772,7 @@ public class Repository {
             throw new RuntimeException(e);
         }
 
-        writeContents(newBranch, (Object) readContents(join(REFS, "master")));
+        writeContents(newBranch, (Object) readContents(join(REFS, currentBranchName())));
 
 
     }
@@ -736,7 +784,7 @@ public class Repository {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
 
-        } else if (readContentsAsString(HEAD).equals(name)) {
+        } else if (currentBranchName().equals(name)) {
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
@@ -754,7 +802,214 @@ public class Repository {
         checkoutInternals(id);
 
         // Also moves the current branch’s head to that commit node.
-        writeContents(join(REFS, readContentsAsString(HEAD)), id);
+        writeContents(join(REFS, currentBranchName()), id);
+
+    }
+
+
+    private static void initialSecurityMerge(String branchName) {
+        if (!isEmptyDir(ADDITION_DIR) || !isEmptyDir(REMOVAL_DIR)) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        } else if (!join(REFS, branchName).exists()) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+
+        } else if (currentBranchName().equals(branchName)) {
+            System.out.println("Cannot merge a branch with itself.");
+            System.exit(0);
+        }
+
+        Commit givenCommit = fromFileB(branchName); // Get the commit of the branch we are merging in
+        Set<String> untracked = untrackedFiles();   // Get all untracked files in the CWD
+
+        if (givenCommit.blobmap != null) {
+            for (String filename : givenCommit.blobmap.keySet()) {
+                if (untracked.contains(filename)) {
+                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                    System.exit(0);
+                }
+            }
+        }
+
+    }
+
+
+    public static void checkoutAndStageFile(String branchName, String filename) {
+        File f = join(CWD, filename);
+        checkout(getBranchCommitId(branchName), filename);
+        add(filename, f);
+
+    }
+
+    public static void handleMergeConflict(String branchName, String filename) {
+        File file = join(CWD, filename);
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+        String contents =
+                "<<<<<<< HEAD\n"
+                        + getFileContentsFromBranch(currentBranchName(), filename)
+                        + "=======\n"
+                        + getFileContentsFromBranch(branchName, filename)
+                        + ">>>>>>>\n";
+
+        writeContents(file, contents);
+        add(filename, file);
+
+
+    }
+
+
+    private static boolean filesInAllThree(Set<String> filenames, String branchName) {
+        boolean b = false;
+        for (String filename : filenames) {
+            if (isModified(branchName, filename) && !isModified(currentBranchName(), filename)) {
+                checkoutAndStageFile(branchName, filename);
+
+
+            } else if (isModified(branchName, filename) && isModified(currentBranchName(), filename)) {
+                if (hasConflictingChanges(branchName, currentBranchName(), filename)) {
+
+                    //Merge conflict !!!!
+                    b = true;
+                    handleMergeConflict(branchName, filename);
+
+                }
+
+
+            }
+
+        }
+        return b;
+
+
+    }
+
+    private static boolean filesInHeadAndSplitOnly(Set<String> filenames, String branchName) {
+        boolean b = false;
+        for (String filename : filenames) {
+            if (isModified(currentBranchName(), filename)) {
+                b = true;
+                handleMergeConflict(branchName, filename);
+
+            } else {
+                // should be removed (and untracked)
+                rm(filename);
+
+
+            }
+
+        }
+        return b;
+    }
+
+    private static boolean filesInOtherAndSplitOnly(Set<String> filenames, String branchName) {
+        boolean b = false;
+        for (String filename : filenames) {
+            if (isModified(branchName, filename) && isModified(currentBranchName(), filename)) {
+                b = true;
+                handleMergeConflict(branchName, filename);
+
+            }
+
+        }
+        return b;
+
+    }
+
+    private static Set<String> untrackedFiles() {
+        Set<String> untracked = new HashSet<>();
+        Commit c = Commit.fromFile(HEAD);  //curent -commit
+        List<String> filenames = plainFilenamesIn(CWD);
+        if (c.blobmap != null) {
+            for (String name : filenames) {
+
+                if ((!isExist(join(ADDITION_DIR, name)) && !c.blobmap.containsKey(name)) || isExist(join(REMOVAL_DIR, name))) {
+                    untracked.add(name);
+                }
+
+            }
+
+        }
+
+        return untracked;
+
+    }
+
+
+    private static void filesInOtherOnly(Set<String> filenames, String branchName) {
+        for (String filename : filenames) {
+            checkoutAndStageFile(branchName, filename);
+        }
+    }
+
+
+    private static boolean filesInHeadAndOtherOnly(Set<String> filenames, String branchName) {
+        boolean b = false;
+        for (String filename : filenames) {
+            if (hasConflictingChanges(branchName, currentBranchName(), filename)) {
+                b = true;
+                handleMergeConflict(branchName, filename);
+
+            }
+
+        }
+        return b;
+
+    }
+
+
+    public static void merge(String branchName) {
+        initialSecurityMerge(branchName);
+        Merge.fillUpMap(currentBranchName());
+        //find the splitPoint
+        String splitPointId = Merge.splitPoint(branchName);
+
+        //If the split point is the same commit as the given branch
+        if (splitPointId.equals(getBranchCommitId(branchName))) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            System.exit(0);
+
+        } else if (splitPointId.equals(getCurrentBranchCommitId())) {
+            checkoutB(branchName);
+            System.out.println("Current branch fast-forwarded.");
+            System.exit(0);
+
+        } else {
+
+
+            boolean b1 = filesInAllThree(FileSets.files(true, true, true, splitPointId, branchName), branchName);
+            boolean b2 = filesInHeadAndSplitOnly(FileSets.files(true, true, false, splitPointId, branchName), branchName);
+            boolean b3 = filesInOtherAndSplitOnly(FileSets.files(false, true, true, splitPointId, branchName), branchName);
+            filesInOtherOnly(FileSets.files(false, false, true, splitPointId, branchName), branchName);
+            boolean b4 = filesInHeadAndOtherOnly(FileSets.files(true, false, true, splitPointId, branchName), branchName);
+
+            if (b1 || b2 || b3 || b4) {
+
+                String message = "Merged " + branchName + " into " + currentBranchName() + ".";
+                commit(message, true, branchName);
+
+
+                System.out.println("Encountered a merge conflict.");
+
+
+            } else {
+
+                String message = "Merged " + branchName + " into " + currentBranchName() + ".";
+                commit(message, true, branchName);
+
+
+            }
+
+
+        }
+
 
     }
 
