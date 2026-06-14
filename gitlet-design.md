@@ -17,7 +17,7 @@
 #### Fields
 
 1. Blobmap - can be made private and provide a getter method instead
-2. List - List of files this. commit currently tracks - this can be achieved by getting bloc.blobmap.keySet() enclosed in a getter method
+2. List - List of files this. commit currently tracks - this can be achieved by getting bloc.getBlobmap().keySet() enclosed in a getter method
 
 
 ## Algorithms

@@ -56,13 +56,13 @@ public class Repository {
     /**
      * File pointing to the objects/refs folder...
      */
-    public static File REFS = join(OBJ_DIR, "refs");
+    public static final File REFS = join(OBJ_DIR, "refs");
 
     /**
      * Variable to store the master branch.
      * branch is just a pointer to a commit, nothing else...
      */
-    public static File master = join(REFS, "master");
+    private static final File MASTER = join(REFS, "master");
 
 
     /**
@@ -75,7 +75,6 @@ public class Repository {
 //    public static String HEAD;
 
     // use a treemap datastructure from string to string and store it in somewhere????
-    public static Map<String, String> map;
 
     public static void setupRepository() {
         if (GITLET_DIR.exists()) {
@@ -93,7 +92,7 @@ public class Repository {
         REFS.mkdir();
         try {
             HEAD.createNewFile();
-            master.createNewFile();
+            MASTER.createNewFile();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -124,17 +123,19 @@ public class Repository {
 
         if (!newfile.exists()) {
             //first time adding or ....
-            if (curr.blobmap != null) {
+            if (curr.getBlobmap() != null) {
                 // check if blobmap contains the name or not
-                if (curr.blobmap.containsKey(name)) {
+                if (curr.getBlobmap().containsKey(name)) {
 
                     //added
                     File fileToBeRemoved = join(REMOVAL_DIR, name);
-                    if ((curr.blobmap.get(name)).equals(sha1((Object) readContents(f))) && isExist(fileToBeRemoved)) {
+                    if ((curr.getBlobmap().get(name)).equals(sha1((Object) readContents(f)))
+                            && isExist(fileToBeRemoved)) {
                         fileToBeRemoved.delete();  //delete it from the removal dir
                         return;
 
-                    } else if ((curr.blobmap.get(name)).equals(sha1((Object) readContents(f)))) {
+                    } else if ((curr.getBlobmap().get(name)).equals(
+                            sha1((Object) readContents(f)))) {
                         return;
 
                     }
@@ -157,10 +158,11 @@ public class Repository {
                 writeContents(newfile, (Object) readContents(f));
 
             }
-            if (curr.blobmap != null) {
+            if (curr.getBlobmap() != null) {
                 // check if blobmap contains the name or not
-                if (curr.blobmap.containsKey(name)) {
-                    if ((curr.blobmap.get(name)).equals(sha1((Object) readContents(newfile)))) {
+                if (curr.getBlobmap().containsKey(name)) {
+                    if ((curr.getBlobmap().get(name)).equals(
+                            sha1((Object) readContents(newfile)))) {
                         newfile.delete();
 
                     }
@@ -172,11 +174,7 @@ public class Repository {
 
     private static boolean isEmptyDir(File dir) {
         String[] files = dir.list();
-        if (files != null && files.length == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return files != null && files.length == 0;
     }
 
 
@@ -198,7 +196,8 @@ public class Repository {
 
 
         if (b) {
-            newCommit = new Commit(message, getCurrentBranchCommitId(), getBranchCommitId(branchName), prev);
+            newCommit = new Commit(message, getCurrentBranchCommitId(),
+                    getBranchCommitId(branchName), prev);
 
 
         } else {
@@ -212,7 +211,7 @@ public class Repository {
             File f = join(ADDITION_DIR, filename);
             byte[] contents = readContents(f);
             String id = sha1((Object) contents);
-            newCommit.blobmap.put(filename, id);
+            newCommit.getBlobmap().put(filename, id);
 
             //save the blob in objects folder
 
@@ -237,12 +236,12 @@ public class Repository {
         //take out all the files names from the removal area...
         String[] filestobeRemoved = REMOVAL_DIR.list();
         for (String file : filestobeRemoved) {
-            if (!newCommit.blobmap.containsKey(file)) {
+            if (!newCommit.getBlobmap().containsKey(file)) {
                 System.out.println("should have been in the previous commit....");
                 System.exit(0);
 
             } else {
-                newCommit.blobmap.remove(file);
+                newCommit.getBlobmap().remove(file);
 
             }
         }
@@ -261,7 +260,7 @@ public class Repository {
         //unrap the head commit
         Commit curr = Commit.fromFile(HEAD);
         //check if head commit's blob contains filename
-        if (!curr.blobmap.containsKey(filename)) {
+        if (!curr.getBlobmap().containsKey(filename)) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
@@ -272,14 +271,14 @@ public class Repository {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            File blob = join(OBJ_DIR, curr.blobmap.get(filename));
+            File blob = join(OBJ_DIR, curr.getBlobmap().get(filename));
 
             writeContents(f, (Object) readContents(blob));
 
 
         } else {
 
-            File blob = join(OBJ_DIR, curr.blobmap.get(filename));
+            File blob = join(OBJ_DIR, curr.getBlobmap().get(filename));
             writeContents(f, (Object) readContents(blob));
 
 
@@ -292,16 +291,18 @@ public class Repository {
     public static void checkout(String commitId, String filename) {
         File f = join(CWD, filename);
 
-        File commit = join(COMMITS_DIR, commitId);
+//        File commit = join(COMMITS_DIR, commitId);
+        String commitIDFinal = resolveCommitId(commitId);
+        File commit = join(COMMITS_DIR, commitIDFinal);
         if (!commit.exists()) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
 
         }
         //unrap the given commit id
-        Commit c = Commit.fromFile(commitId);
+        Commit c = Commit.fromFile(commitIDFinal);
         //check if head commit's blob contains filename
-        if (!c.blobmap.containsKey(filename)) {
+        if (!c.getBlobmap().containsKey(filename)) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
@@ -313,7 +314,7 @@ public class Repository {
                 throw new RuntimeException(e);
             }
         }
-        File blob = join(OBJ_DIR, c.blobmap.get(filename));
+        File blob = join(OBJ_DIR, c.getBlobmap().get(filename));
         writeContents(f, (Object) readContents(blob));
 
 
@@ -323,7 +324,7 @@ public class Repository {
 //    //Checks if the file is currently being tracked by the given branch or not...
 //    private static boolean istracked(String filename, File branch) {
 //        Commit head = Commit.fromFile(branch);
-//        return head.blobmap.containsKey(filename);
+//        return head.getBlobmap().containsKey(filename);
 //    }
 
     private static void stagingAreaClearer(File file) {
@@ -357,13 +358,14 @@ public class Repository {
         //and put them in the working directory, overwriting the
         // versions of the files that are already there if they exist.
 
-        if (c.blobmap != null) {
-            for (String filename : c.blobmap.keySet()) {
+        if (c.getBlobmap() != null) {
+            for (String filename : c.getBlobmap().keySet()) {
 
                 File f = join(CWD, filename);
                 //working file is untracked in the current branch (also check
                 //if current branch is the initial commit
-                if (curr.blobmap == null || (f.exists() && !curr.blobmap.containsKey(filename))) {
+                if (curr.getBlobmap() == null
+                        || (f.exists() && !curr.getBlobmap().containsKey(filename))) {
                     System.out.println("There is an untracked file in the way; delete it, or "
                             + "add and commit it first.");
                     System.exit(0);
@@ -376,7 +378,7 @@ public class Repository {
                         throw new RuntimeException(e);
                     }
                 }
-                File blob = join(OBJ_DIR, c.blobmap.get(filename));
+                File blob = join(OBJ_DIR, c.getBlobmap().get(filename));
                 writeContents(f, (Object) readContents(blob));
 
 
@@ -387,15 +389,15 @@ public class Repository {
 
         //Any files that are tracked in the current branch but are not present
         // in the checked-out branch are deleted.
-        if (curr.blobmap != null) {
-            for (String filename : curr.blobmap.keySet()) {
+        if (curr.getBlobmap() != null) {
+            for (String filename : curr.getBlobmap().keySet()) {
                 File f = join(CWD, filename);
 
                 if (f.exists()) {
-                    if (c.blobmap == null) {
+                    if (c.getBlobmap() == null) {
                         restrictedDelete(f);
 
-                    } else if (!c.blobmap.containsKey(filename)) {
+                    } else if (!c.getBlobmap().containsKey(filename)) {
                         restrictedDelete(f);
 
                     }
@@ -435,7 +437,7 @@ public class Repository {
     public static void log() {
         String commitId = getCurrentBranchCommitId();
         Commit c = Commit.fromFile(HEAD);
-        while (c.blobmap != null) {
+        while (c.getBlobmap() != null) {
 
             if (c.getParent1() != null && c.getParent2() != null) {
                 String parent1 = c.getParent1();
@@ -475,17 +477,16 @@ public class Repository {
         }
 
         //this has to be the head
-        if (c.blobmap == null) {
-            Formatter f = new Formatter();
-            f.format("===%n");
-            f.format("commit %s%n", commitId);
-            f.format("Date: %s%n", c.getTimestamp());
-            f.format("%s%n", c.getMessage());
-            System.out.println(f);
+        Formatter f = new Formatter();
+        f.format("===%n");
+        f.format("commit %s%n", commitId);
+        f.format("Date: %s%n", c.getTimestamp());
+        f.format("%s%n", c.getMessage());
+        System.out.println(f);
 //            System.out.println();
-            f.close();
+        f.close();
 
-        }
+
 
     }
 
@@ -550,12 +551,12 @@ public class Repository {
 
 
     private static void printBranches() {
-        String curr_branch = currentBranchName();
+        String currBranch = currentBranchName();
         Formatter f = new Formatter();
         f.format("=== Branches ===%n");
         List<String> filenames = plainFilenamesIn(REFS);
         for (String name : filenames) {
-            if (curr_branch.equals(name)) {
+            if (currBranch.equals(name)) {
                 f.format("*%s%n", name);
             } else {
                 f.format("%s%n", name);
@@ -593,7 +594,7 @@ public class Repository {
 
     //Checks if given File f is identical in the given commit ...
     private static boolean isIdentical(File f, String name, Commit commit) {
-        return sha1((Object) readContents(f)).equals(commit.blobmap.get(name));
+        return sha1((Object) readContents(f)).equals(commit.getBlobmap().get(name));
 
 
     }
@@ -621,8 +622,8 @@ public class Repository {
         //Not staged for removal, but tracked in the current commit
         // and deleted from the working directory.
         //also check if c is the initial commit or not...
-        if (c.blobmap != null) {
-            for (String name : c.blobmap.keySet()) {
+        if (c.getBlobmap() != null) {
+            for (String name : c.getBlobmap().keySet()) {
 
                 File f = join(CWD, name);
                 File fileStagedForAdd = join(ADDITION_DIR, name);
@@ -671,17 +672,22 @@ public class Repository {
 
 
         //Final category ("Untracked files")
-        f1 = new Formatter();
+        printUntrackedFiles(c, filenames);
+
+    }
+
+    private static void printUntrackedFiles(Commit c, List<String> filenames) {
+        Formatter f1 = new Formatter();
         f1.format("=== Untracked Files ===%n");
         for (String name : filenames) {
 
-            if (c.blobmap != null) {
-                if ((!isExist(join(ADDITION_DIR, name)) && !c.blobmap.containsKey(name)) || isExist(join(REMOVAL_DIR, name))) {
+            if (c.getBlobmap() != null) {
+                if ((!isExist(join(ADDITION_DIR, name)) && !c.getBlobmap().containsKey(name))
+                        || isExist(join(REMOVAL_DIR, name))) {
                     f1.format("%s%n", name);
                 }
 
             }
-
 
         }
         System.out.println(f1);
@@ -715,8 +721,8 @@ public class Repository {
         //check if the file is currently being tracked by the current commit or not...
         Commit head = Commit.fromFile(HEAD);
 
-        if (head.blobmap != null) {
-            if (!head.blobmap.containsKey(filename)) {
+        if (head.getBlobmap() != null) {
+            if (!head.getBlobmap().containsKey(filename)) {
                 //means its not currently being tracked by the current commit.
 
                 deleteFile(ADDITION_DIR, filename);
@@ -794,7 +800,8 @@ public class Repository {
     }
 
     public static void reset(String id) {
-        if (!join(COMMITS_DIR, id).exists()) {
+//        String commitIDFinal = resolveCommitId(commitId);
+        if (!join(COMMITS_DIR, resolveCommitId(id)).exists()) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
 
@@ -820,13 +827,17 @@ public class Repository {
             System.exit(0);
         }
 
-        Commit givenCommit = fromFileB(branchName); // Get the commit of the branch we are merging in
+
+        // Get the commit of the branch we are merging in
+        Commit givenCommit = fromFileB(branchName);
+
         Set<String> untracked = untrackedFiles();   // Get all untracked files in the CWD
 
-        if (givenCommit.blobmap != null) {
-            for (String filename : givenCommit.blobmap.keySet()) {
+        if (givenCommit.getBlobmap() != null) {
+            for (String filename : givenCommit.getBlobmap().keySet()) {
                 if (untracked.contains(filename)) {
-                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                    System.out.println("There is an untracked file in the way; "
+                            + "delete it, or add and commit it first.");
                     System.exit(0);
                 }
             }
@@ -873,7 +884,8 @@ public class Repository {
                 checkoutAndStageFile(branchName, filename);
 
 
-            } else if (isModified(branchName, filename) && isModified(currentBranchName(), filename)) {
+            } else if (isModified(branchName, filename) && isModified(currentBranchName(),
+                    filename)) {
                 if (hasConflictingChanges(branchName, currentBranchName(), filename)) {
 
                     //Merge conflict !!!!
@@ -927,10 +939,11 @@ public class Repository {
         Set<String> untracked = new HashSet<>();
         Commit c = Commit.fromFile(HEAD);  //curent -commit
         List<String> filenames = plainFilenamesIn(CWD);
-        if (c.blobmap != null) {
+        if (c.getBlobmap() != null) {
             for (String name : filenames) {
 
-                if ((!isExist(join(ADDITION_DIR, name)) && !c.blobmap.containsKey(name)) || isExist(join(REMOVAL_DIR, name))) {
+                if ((!isExist(join(ADDITION_DIR, name)) && !c.getBlobmap().containsKey(name))
+                        || isExist(join(REMOVAL_DIR, name))) {
                     untracked.add(name);
                 }
 
@@ -984,11 +997,20 @@ public class Repository {
         } else {
 
 
-            boolean b1 = filesInAllThree(FileSets.files(true, true, true, splitPointId, branchName), branchName);
-            boolean b2 = filesInHeadAndSplitOnly(FileSets.files(true, true, false, splitPointId, branchName), branchName);
-            boolean b3 = filesInOtherAndSplitOnly(FileSets.files(false, true, true, splitPointId, branchName), branchName);
-            filesInOtherOnly(FileSets.files(false, false, true, splitPointId, branchName), branchName);
-            boolean b4 = filesInHeadAndOtherOnly(FileSets.files(true, false, true, splitPointId, branchName), branchName);
+            boolean b1 = filesInAllThree(FileSets.files(true, true, true, splitPointId,
+                            branchName),
+                    branchName);
+            boolean b2 = filesInHeadAndSplitOnly(FileSets.files(true, true, false, splitPointId,
+                            branchName),
+                    branchName);
+            boolean b3 = filesInOtherAndSplitOnly(FileSets.files(false, true, true, splitPointId,
+                            branchName),
+                    branchName);
+            filesInOtherOnly(FileSets.files(false, false, true, splitPointId, branchName),
+                    branchName);
+            boolean b4 = filesInHeadAndOtherOnly(FileSets.files(true, false, true, splitPointId,
+                            branchName),
+                    branchName);
 
             if (b1 || b2 || b3 || b4) {
 
