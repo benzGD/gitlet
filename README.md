@@ -48,7 +48,7 @@ Some of the more interesting parts of the project were:
 The hardest part of the project was the `merge` command. It depended on the correctness of nearly every other command, and required careful handling of many file states and edge cases. Good design decisions early on saved a lot of time later.
 
 ## Summary
-Gitlet is a project of about 1,000 lines. It is not very large, but it contains a wealth of knowledge points and ideas. This project can fully train beginners to implement a just-right project.
+Gitlet is a project of about 1,000 lines(Although my implementation ended up being appox ~ 1.5k loc). It is not very large, but it contains a wealth of knowledge points and ideas. This project can fully train beginners to implement a just-right project.
 
 I gained a lot from this project. For example, my understanding of function naming, object-oriented ideas, functional programming methods, and induction and organization skills have all been improved. Good design decisions early on can save dozens of hours of work later, while poor design choices can easily set a project back by 10–30 hours or more.
 
